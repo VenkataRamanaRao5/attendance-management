@@ -103,7 +103,31 @@
             top: 10%;
             margin: auto;
         }
-        
+        @media (max-width: 600px) {
+            .entry {
+                grid-template-columns: 1fr auto;
+                gap: 5px;
+            }
+
+            .mark, .unmark {
+                font-size: 0.875rem;
+                padding: 8px;
+            }
+
+            #actions {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            #actions button {
+                width: 100%;
+            }
+
+            #abs, #roll {
+                width: 100%;
+                height: 75%;
+            }
+        }
         #container{
             padding: 10px;
             display: flex;
@@ -114,6 +138,7 @@
         #roll::-webkit-scrollbar{
             display: none;
         }
+
     </style>
 </head>
 <body>
@@ -125,8 +150,10 @@
             
         </div>
         <div id="actions">
+            <span></span>
             <button onclick="show()">Show Absentees</button>
             <button onclick="copy()">Copy Absentees</button>
+            
         </div>
     </div>
     <div id="abs" class="hide">
@@ -139,6 +166,7 @@
         params: rollNo (roll number), sno (the index value)
         Create a div with roll number, absent marker button and unmark button
         */
+
         function createEntry(rollNo, sno){
             //Enclosing div for each row
             let entry = document.createElement('div')
@@ -157,6 +185,8 @@
             absButton.innerText = 'A'
             absButton.addEventListener('click', (e) => {
                 abs.push(rollNo)
+                numberAbs++
+                numberPres--
                 entry.classList.add('absent')
             })
 
@@ -170,6 +200,8 @@
                     abs.splice(index, 1) 
                 }
                 entry.classList.remove('absent')
+                numberAbs--
+                numberPres++
             })
             entry.appendChild(rno)
             entry.appendChild(absButton)
@@ -212,7 +244,11 @@
             roll.push(i)
         for(let i = 2022503701; i <= 2022503707; i += 2)
             roll.push(i)
+        let numberAbs = 0;
+        let numberPres = roll.length;
         roll.forEach((rno, sno) => createEntry(rno, sno))
+
+
     </script>
 </body>
 </html>
