@@ -160,15 +160,17 @@
                 entry.classList.add('absent')
             })
 
-            //If clicked, remove rollNo from abs array
+            
             let unmarkButton = document.createElement('button')
             unmarkButton.classList.add('unmark')
             unmarkButton.innerText = 'P'
             unmarkButton.addEventListener('click', (e) => {
-                abs.splice(abs.find(e => e == rollNo))
+                const index = abs.indexOf(rollNo)
+                if (index !== -1) {
+                    abs.splice(index, 1) 
+                }
                 entry.classList.remove('absent')
             })
-
             entry.appendChild(rno)
             entry.appendChild(absButton)
             entry.appendChild(unmarkButton)
