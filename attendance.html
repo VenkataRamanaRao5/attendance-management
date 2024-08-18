@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Attendance</title>
     <style>
+
         html, body, #container{
             height: 100%;
             width: 100%;
@@ -133,6 +134,7 @@
             display: flex;
             justify-content: center;
             flex-wrap: wrap;
+            width: 700px;
         }
         
         #roll::-webkit-scrollbar{
@@ -216,7 +218,7 @@
         }
 
         function absAsText(){
-            return abs.reduce((l, r) => `${l}\n${r}`, 'Absentees:\n')
+            return abs.reduce((l, r) => `${l}\n${r}`, `Number of present: ${numberPres}\nNumber of Absent: ${numberAbs}\n\n\nAbsentees:\n`)  
         }
 
         function show(){
@@ -244,12 +246,15 @@
         const container = document.getElementById("container")
         let roll = [], abs = []
         for(let i = 2022503001; i <= 2022503071; i += 2)
-            roll.push(i)
+            if(i != 2022503069 && i != 2022503021)
+                roll.push(i)
         for(let i = 2022503301; i <= 2022503309; i += 2)
             roll.push(i)
         for(let i = 2022503501; i <= 2022503583; i += 2)
-            roll.push(i)
+            if(i != 2022503569 && i != 2022503561)
+                roll.push(i)
         for(let i = 2022503701; i <= 2022503707; i += 2)
+            
             roll.push(i)
         let numberAbs = 0;
         let numberPres = roll.length;
