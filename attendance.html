@@ -150,7 +150,8 @@
             
         </div>
         <div id="actions">
-            <span></span>
+            <div>Number of present:<span id="numberPresent"></span></div>
+            <div>Number of absent:<span id="numberAbsent"></span></div>
             <button onclick="show()">Show Absentees</button>
             <button onclick="copy()">Copy Absentees</button>
             
@@ -187,6 +188,8 @@
                 abs.push(rollNo)
                 numberAbs++
                 numberPres--
+                numPresDiv.innerText = numberPres;
+                numAbsDiv.innerText = numberAbs
                 entry.classList.add('absent')
             })
 
@@ -202,6 +205,8 @@
                 entry.classList.remove('absent')
                 numberAbs--
                 numberPres++
+                numPresDiv.innerText = numberPres;
+                numAbsDiv.innerText = numberAbs
             })
             entry.appendChild(rno)
             entry.appendChild(absButton)
@@ -234,6 +239,8 @@
         const box = document.getElementById("roll")
         const absDiv = document.getElementById("abs")
         const output = document.getElementById("op")
+        const numPresDiv = document.getElementById("numberPresent")
+        const numAbsDiv = document.getElementById("numberAbsent")
         const container = document.getElementById("container")
         let roll = [], abs = []
         for(let i = 2022503001; i <= 2022503071; i += 2)
@@ -246,6 +253,8 @@
             roll.push(i)
         let numberAbs = 0;
         let numberPres = roll.length;
+        numPresDiv.innerText = numberPres;
+        numAbsDiv.innerText = numberAbs
         roll.forEach((rno, sno) => createEntry(rno, sno))
 
 
