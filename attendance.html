@@ -1,14 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Attendance</title>
     <style>
-        html,
-        body,
-        #container {
         html, body, #container {
             height: 100%;
             width: 100%;
@@ -23,9 +19,9 @@
             font-family: Arial, sans-serif; /* Font for better readability */
         }
 
-        .blur{
-            opacity: 0.1;
-            background-color: rgba(230, 230, 230, 0.8);
+        .blur {
+            opacity: 0.5;
+            background-color: rgba(0, 0, 0, 0.8); /* Dark semi-transparent background */
         }
 
         .hide {
@@ -61,37 +57,39 @@
             border-bottom: 1px solid #333; /* Dark border for separation */
         }
 
-        .rollno, .mark, .unmark{
+        .rollno, .mark, .unmark {
             padding-left: 2px;
             padding-right: 2px;
             text-align: center;
         }
 
-        .mark, .unmark{
+        .mark, .unmark {
             justify-self: right;
         }
 
-        .mark{
-            background-color: rgb(214, 62, 62);
+        .mark {
+            background-color: #b30000; /* Dark red for 'Absent' */
+            color: #f5f5f5; /* Light text color */
             border-radius: 2px;
         }
 
-        .unmark{
-            background-color: green;
+        .unmark {
+            background-color: #006400; /* Dark green for 'Present' */
+            color: #f5f5f5; /* Light text color */
             border-radius: 2px;
         }
 
-        .odd{
-            background-color: rgb(212, 215, 219);
+        .odd {
+            background-color: #2e2e2e; /* Slightly lighter dark background */
         }
 
-        .even{
-            background-color: rgb(155, 151, 146);
+        .even {
+            background-color: #3c3c3c; /* Slightly darker dark background */
         }
 
-        .absent{
-            background-color: rgb(83, 36, 36);
-            color: aliceblue;
+        .absent {
+            background-color: #4d004d; /* Dark purple for absent */
+            color: #f5f5f5; /* Light text color */
         }
 
         #op {
@@ -99,7 +97,7 @@
             color: #f5f5f5; /* Light text color */
         }
 
-        #roll, #abs{
+        #roll, #abs {
             overflow: auto;
             width: 80%;
             height: 80%;
@@ -109,7 +107,7 @@
             border-radius: 5px;
         }
         
-        #abs{
+        #abs {
             position: absolute;
             top: 10%;
             margin: auto;
@@ -122,8 +120,7 @@
                 gap: 5px;
             }
 
-            .mark,
-            .unmark {
+            .mark, .unmark {
                 font-size: 0.875rem;
                 padding: 8px;
             }
@@ -137,8 +134,7 @@
                 width: 100%;
             }
 
-            #abs,
-            #roll {
+            #abs, #roll {
                 width: 100%;
                 height: 75%;
             }
@@ -157,23 +153,31 @@
             display: none;
         }
 
+        h1 {
+            margin-top: 20px;
+            color: #f5f5f5;
+        }
+
+        .small-text {
+            font-size: 0.75rem;
+            color: #b5b5b5;
+            margin: 10px 0;
+        }
     </style>
 </head>
-
 <body>
     <h1>MIT BATCH 1 ATTENDANCE LOGGER</h1>
     
     <div id="container">
-        <input type="file" id="rollFile" />
         <div id="roll">
-
+            
         </div>
         <div id="actions">
             <div>Number of present:<span id="numberPresent"></span></div>
             <div>Number of absent:<span id="numberAbsent"></span></div>
             <button onclick="show()">Show Absentees</button>
             <button onclick="copy()">Copy Absentees</button>
-
+            
         </div>
     </div>
     <div id="abs" class="hide">
@@ -187,7 +191,7 @@
         Create a div with roll number, absent marker button and unmark button
         */
 
-        function createEntry(rollNo, sno) {
+        function createEntry(rollNo, sno){
             //Enclosing div for each row
             let entry = document.createElement('div')
             entry.id = `entry${sno}`
@@ -197,7 +201,7 @@
 
             let rno = document.createElement('span')
             rno.classList.add('rollno')
-            rno.innerText = rollNo[0]
+            rno.innerText = rollNo
 
             //If clicked, add rollNo to abs array
             let absButton = document.createElement('button')
@@ -212,14 +216,14 @@
                 entry.classList.add('absent')
             })
 
-
+            
             let unmarkButton = document.createElement('button')
             unmarkButton.classList.add('unmark')
             unmarkButton.innerText = 'P'
             unmarkButton.addEventListener('click', (e) => {
                 const index = abs.indexOf(rollNo)
                 if (index !== -1) {
-                    abs.splice(index, 1)
+                    abs.splice(index, 1) 
                 }
                 entry.classList.remove('absent')
                 numberAbs--
@@ -234,48 +238,25 @@
             box.appendChild(entry)
         }
 
-        function absAsText() {
-            abs.sort((a, b) => a[0] - b[0])
-            return abs.reduce((l, r) => `${l}\n${str(r)}`, `Number of present: ${numberPres}\nNumber of Absent: ${numberAbs}\n\n\nAbsentees:\n`)
+        function absAsText(){
+            return abs.reduce((l, r) => `${l}\n${r}`, `Number of present: ${numberPres}\nNumber of Absent: ${numberAbs}\n\n\nAbsentees:\n`)  
         }
 
-        function show() {
+        function show(){
             output.innerText = absAsText()
             container.classList.add("blur")
             absDiv.classList.remove("hide")
             absDiv.classList.add("show")
         }
-
-        function unshow() {
+        
+        function unshow(){
             container.classList.remove("blur")
             absDiv.classList.add("hide")
             absDiv.classList.remove("show")
         }
 
-        function copy() {
+        function copy(){
             navigator.clipboard.writeText(absAsText())
-        }
-
-        function str(s) {
-            return s[0] + ' ' + s[1]
-        }
-
-        function createRoll(e) {
-            const f = file.files[0]
-            const reader = new FileReader();
-            reader.onload = () => {
-                res = reader.result
-                console.log(res.toString())
-                roll = res.split(/[\r\n]+/).map(e => e.split(/, ?/))
-                localStorage.setItem('roll', JSON.stringify(roll))
-                numberAbs = 0;
-                numberPres = roll.length;
-                numPresDiv.innerText = numberPres;
-                numAbsDiv.innerText = numberAbs
-                box.innerHTML = ''
-                roll.forEach((rno, sno) => createEntry(rno, sno))
-            }
-            reader.readAsText(f)
         }
 
         const box = document.getElementById("roll")
@@ -284,11 +265,8 @@
         const numPresDiv = document.getElementById("numberPresent")
         const numAbsDiv = document.getElementById("numberAbsent")
         const container = document.getElementById("container")
-        const file = document.getElementById("rollFile")
-        file.addEventListener('change', createRoll)
-        let res
         let roll = [], abs = []
-        /*for(let i = 2022503001; i <= 2022503071; i += 2)
+        for(let i = 2022503001; i <= 2022503071; i += 2)
             if(i != 2022503069 && i != 2022503021)
                 roll.push(i)
         for(let i = 2022503301; i <= 2022503309; i += 2)
@@ -297,13 +275,8 @@
             if(i != 2022503569 && i != 2022503561)
                 roll.push(i)
         for(let i = 2022503701; i <= 2022503707; i += 2)
-            roll.push(i)*/
-        roll = localStorage.getItem('roll')
-        console.log(roll)
-        if (!roll)
-            roll = [['rollno', 'name']]
-        else
-            roll = JSON.parse(roll)
+            
+            roll.push(i)
         let numberAbs = 0;
         let numberPres = roll.length;
         numPresDiv.innerText = numberPres;
@@ -313,5 +286,4 @@
 
     </script>
 </body>
-
 </html>
