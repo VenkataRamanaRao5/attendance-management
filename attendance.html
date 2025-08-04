@@ -158,6 +158,15 @@
     </div-->
     <div id="container">
         <input type="file" id="rollFile" />
+        <div>
+            <select id="rollName">
+            </select>
+        </div>
+        <div id="options">
+            <button onclick="clearRoll()">Clear rolls</button>
+            <button onclick="present()">Mark all present</button>
+            <button onclick="absent()">Mark all absent</button>
+        </div>
         <div id="roll">
 
         </div>
@@ -260,7 +269,9 @@
                 res = reader.result
                 console.log(res.toString())
                 roll = res.split(/[\r\n]+/).map(e => e.split(/, ?/))
-                localStorage.setItem('roll', JSON.stringify(roll))
+                rolls[f.name.split('.')[0]] = roll
+                localStorage.setItem('roll', JSON.stringify(rolls))
+                updateDropdown()
                 numberAbs = 0;
                 numberPres = roll.length;
                 numPresDiv.innerText = numberPres;
@@ -271,6 +282,51 @@
             reader.readAsText(f)
         }
 
+        function loadRoll(roll) {
+            box.innerHTML = ''
+            numberAbs = 0
+            numberPres = roll.length;
+            numPresDiv.innerText = numberPres;
+            numAbsDiv.innerText = numberAbs
+            roll.forEach((rno, sno) => createEntry(rno, sno))
+        }
+
+        function updateDropdown() {
+            for(let key in rolls) {
+                const opt = document.createElement('option')
+                opt.value = key
+                opt.label = key
+                opt.textContent = key
+                dropdown.appendChild(opt)
+            }
+        }
+
+        function changeRoll(e) {
+            roll = rolls[e.target.value]
+            loadRoll(roll)
+        }
+
+        function clearRoll() {
+            localStorage.removeItem('roll')
+            updateDropdown()
+        }
+
+        function present() {
+            for(let name of box.children) {
+                let pr = name.children[2]
+                if(name.classList.contains('absent')) 
+                    pr.click()
+            }
+        }
+
+        function absent() {
+            for(let name of box.children) {
+                let ab = name.children[1]
+                if(name.classList.contains('present')) 
+                    ab.click()
+            }
+        }
+
         const box = document.getElementById("roll")
         const absDiv = document.getElementById("abs")
         const output = document.getElementById("op")
@@ -278,8 +334,13 @@
         const numAbsDiv = document.getElementById("numberAbsent")
         const container = document.getElementById("container")
         const file = document.getElementById("rollFile")
+        const dropdown = document.getElementById("rollName")
         file.addEventListener('change', createRoll)
+        dropdown.addEventListener('change', changeRoll)
+        let rolls = {}
         let res
+        let numberPres
+        let numberAbs = 0;
         let roll = [], abs = []
         /*for(let i = 2022503001; i <= 2022503071; i += 2)
             if(i != 2022503069 && i != 2022503021)
@@ -291,19 +352,14 @@
                 roll.push(i)
         for(let i = 2022503701; i <= 2022503707; i += 2)
             roll.push(i)*/
-        roll = localStorage.getItem('roll')
-        console.log(roll)
-        if (!roll)
+        rolls = JSON.parse(localStorage.getItem('roll')) || {}
+        console.log(rolls)
+        updateDropdown()
+        if (!rolls)
             roll = [['rollno', 'name']]
         else
-            roll = JSON.parse(roll)
-        let numberAbs = 0;
-        let numberPres = roll.length;
-        numPresDiv.innerText = numberPres;
-        numAbsDiv.innerText = numberAbs
-        roll.forEach((rno, sno) => createEntry(rno, sno))
-
-
+            roll = Object.values(rolls)[0]
+        loadRoll(roll)
     </script>
 </body>
 
