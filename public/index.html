@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance</title>
+    <style>
+        html,
+        body,
+        #container {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            overflow: clip;
+            display: flex;
+            justify-content: center;
+            background-color: #1e1e1e;
+            /* Dark background */
+            color: #f5f5f5;
+            /* Light text color */
+        }
+
+        .blur {
+            opacity: 0.5;
+            background-color: rgba(0, 0, 0, 0.8);
+            /* Dark semi-transparent background */
+        }
+
+        .hide {
+            display: none;
+        }
+
+        .show {
+            display: block;
+            width: 75%;
+            height: 75%;
+        }
+
+        .unmark {
+            visibility: hidden;
+        }
+
+        .mark {
+            visibility: visible;
+        }
+
+        .absent .unmark {
+            visibility: visible;
+        }
+
+        .absent .mark {
+            visibility: hidden;
+        }
+
+        .entry {
+            padding: 5px;
+            display: grid;
+            width: 95%;
+            grid-template-columns: 0.2fr 0.8fr 0.1fr 0.1fr;
+            border-bottom: 1px solid #333;
+            /* Dark border for separation */
+        }
+
+        .rollno,
+        .name,
+        .mark,
+        .unmark {
+            padding-left: 2px;
+            padding-right: 2px;
+            text-align: center;
+        }
+
+        .name {
+            word-break: break-all;
+            text-wrap: wrap;
+        }
+
+        .mark,
+        .unmark {
+            justify-self: right;
+        }
+
+        .mark {
+            background-color: #b30000;
+            /* Dark red for 'Absent' */
+            color: #f5f5f5;
+            /* Light text color */
+            border-radius: 2px;
+        }
+
+        .unmark {
+            background-color: #006400;
+            /* Dark green for 'Present' */
+            color: #f5f5f5;
+            /* Light text color */
+            border-radius: 2px;
+        }
+
+        .odd {
+            background-color: #2e2e2e;
+            /* Slightly lighter dark background */
+        }
+
+        .even {
+            background-color: #3c3c3c;
+            /* Slightly darker dark background */
+        }
+
+        .absent {
+            background-color: #4d004d;
+            /* Dark purple for absent */
+            color: #f5f5f5;
+            /* Light text color */
+        }
+
+        #op {
+            height: 90%;
+            color: #f5f5f5;
+            /* Light text color */
+        }
+
+        #roll,
+        #abs {
+            overflow: auto;
+            width: 80%;
+            height: 80%;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+            border: solid #333 2px;
+            /* Dark border */
+            border-radius: 5px;
+        }
+
+        #abs {
+            position: absolute;
+            top: 10%;
+            margin: auto;
+            background-color: #2e2e2e;
+            /* Dark background */
+        }
+
+        @media (max-width: 600px) {
+            .entry {
+                grid-template-columns: 0.2fr 1fr 0.1fr 0.1fr;
+                gap: 5px;
+            }
+
+            .mark,
+            .unmark {
+                font-size: 0.875rem;
+                padding: 8px;
+            }
+
+            #actions {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            #actions button {
+                width: 30%;
+            }
+
+            #abs,
+            #roll {
+                width: 100%;
+                height: 75%;
+            }
+        }
+
+        #container {
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            width: 700px;
+        }
+
+        #roll::-webkit-scrollbar {
+            display: none;
+        }
+
+        .header, .control-panel, #classManager {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        #classManager {
+            flex-direction: column;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <!--div id="editDiv">
+        <button id="edit">Edit Roll</button>
+    </div-->
+    <div id="container">
+
+        <div class="header">
+            <button onclick="toggleManager()" style="width:auto; background:#444;">+ Manage Classes</button>
+        </div>
+
+        <div id="classManager" style="display: none;">
+            <div>
+                <label for="newClassName">Add New Class:</label>
+                <input type="text" id="newClassName" placeholder="Name (e.g. CSE-A)">
+                <input type="file" id="fileInput" style="margin: 10px 0;">
+            </div>
+            <button onclick="saveNewClass()">Upload & Save</button>
+        </div>
+
+        <div class="control-panel">
+            <select id="classSelector" onchange="loadClassRoster()"></select>
+            <input type="date" id="attendanceDate">
+            <input type="text" id="attendanceHour" placeholder="Hour (e.g. 1, 3-4)">
+            <div style="display:flex; gap:5px;">
+                <button onclick="saveAttendance()">Save</button>
+            </div>
+            <div id="actions">
+                <div>Number of present:<span id="numberPresent"></span></div>
+                <div>Number of absent:<span id="numberAbsent"></span></div>
+                <button onclick="show()">Show Absentees</button>
+                <button onclick="copy()">Copy Absentees</button>
+                <button onclick="mark()">Upload Absentees</button>
+
+            </div>
+        </div>
+        <div id="roll">
+
+        </div>
+        
+    </div>
+    <div id="report">
+
+    </div>
+    <div id="abs" class="hide">
+        <div id="op"></div>
+        <button onclick="unshow()">Close</button>
+        <button onclick="copy()">Copy to clipboard</button>
+    </div>
+    <script>
+
+        const baseUrl = "http://127.0.0.1:3000"
+
+        window.onload = async () => {
+            document.getElementById('attendanceDate').valueAsDate = new Date();
+            await fetchClasses();
+        };
+
+        function toggleManager() {
+            const el = document.getElementById('classManager');
+            el.style.display = el.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        async function fetchClasses() {
+            const res = await fetch(baseUrl + '/api/classes');
+            const data = await res.json();
+            
+            const select = document.getElementById('classSelector');
+            select.innerHTML = '<option value="">-- Select Class --</option>';
+            data.forEach(row => {
+                const opt = document.createElement('option');
+                opt.value = row.class_name;
+                opt.innerText = row.class_name;
+                select.appendChild(opt);
+            });
+        }
+
+        async function saveNewClass() {
+            const className = document.getElementById('newClassName').value.trim();
+            const fileInput = document.getElementById('fileInput');
+            if (!className || !fileInput.files[0]) return alert("Missing details");
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const lines = e.target.result.split(/\r?\n/);
+                const studentList = [];
+                lines.forEach(line => {
+                    if (line.trim()) {
+                        const parts = line.split(',');
+                        studentList.push({ 
+                            roll: parts.length > 1 ? parts[0].trim() : 'N/A', 
+                            name: parts.length > 1 ? parts[1].trim() : line.trim() 
+                        });
+                    }
+                });
+
+                // POST to our server
+                const res = await fetch(baseUrl + '/api/classes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ className, students: studentList })
+                });
+
+                if (res.ok) {
+                    alert("Class Saved");
+                    toggleManager();
+                    fetchClasses();
+                } else {
+                    alert("Error saving class");
+                }
+            };
+            reader.readAsText(fileInput.files[0]);
+        }
+
+        async function loadClassRoster() {
+            const className = document.getElementById('classSelector').value;
+            if (!className) return;
+
+            const res = await fetch(`${baseUrl}/api/roster/${className}`);
+            const data = await res.json();
+            
+            if (data && data.students) {
+                roll = data.students.map(s => ({ ...s, status: 'Present' }));
+                console.log(roll)
+                numberAbs = 0;
+                numberPres = roll.length;
+                numPresDiv.innerText = numberPres;
+                numAbsDiv.innerText = numberAbs;
+                roll.forEach((obj, index) => createEntry(obj["roll"], obj["name"], index));
+            }
+        }
+
+        async function saveAttendance() {
+            const className = document.getElementById('classSelector').value;
+            const date = document.getElementById('attendanceDate').value;
+            const hour = document.getElementById('attendanceHour').value;
+            
+            const attendanceMap = {};
+            roll.forEach(s => attendanceMap[s.roll] = s.status);
+
+            const res = await fetch(baseUrl + '/api/attendance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ className, date, hour, attendanceData: attendanceMap })
+            });
+
+            if (res.ok) alert("Saved!");
+            else alert("Error saving");
+        }
+
+        async function fetchAttendance() {
+            const className = document.getElementById('classSelector').value;
+            const date = document.getElementById('attendanceDate').value;
+            const hour = document.getElementById('attendanceHour').value;
+
+            // First reload the clean roster to get names
+            await loadClassRoster();
+
+            // Then fetch the status overlay
+            const params = new URLSearchParams({ className, date, hour });
+            const res = await fetch(`${baseUrl}/api/attendance?${params}`);
+            const data = await res.json();
+
+            if (data && data.attendance_data) {
+                const savedMap = data.attendance_data;
+                currentStudents.forEach(s => {
+                    if (savedMap[s.roll]) s.status = savedMap[s.roll];
+                });
+                renderStudents();
+                alert("History Loaded");
+            } else {
+                alert("No saved record for this slot.");
+            }
+        }
+
+        /*
+        params: rollNo (roll number), sno (the index value)
+        Create a div with roll number, absent marker button and unmark button
+        */
+
+        function createEntry(rollNo, name, sno) {
+            //Enclosing div for each row
+            let entry = document.createElement('div')
+            entry.id = `entry${sno}`
+            entry.classList.add('entry')
+            //Odd even classes for alternate shading
+            entry.classList.add(sno % 2 ? 'odd' : 'even')
+
+            let rno = document.createElement('span')
+            rno.classList.add('rollno')
+            rno.innerText = rollNo
+
+            let nameSpan = document.createElement('span')
+            nameSpan.classList.add('name')
+            nameSpan.innerText = name
+
+            //If clicked, add rollNo to abs array
+            let absButton = document.createElement('button')
+            absButton.classList.add('mark')
+            absButton.innerText = 'A'
+            absButton.addEventListener('click', (e) => {
+                roll = roll.map(s => s.roll === rollNo[0] ? { ...s, status: 'Absent' } : s)
+                numberAbs++
+                numberPres--
+                numPresDiv.innerText = numberPres;
+                numAbsDiv.innerText = numberAbs
+                entry.classList.add('absent')
+            })
+
+
+            let unmarkButton = document.createElement('button')
+            unmarkButton.classList.add('unmark')
+            unmarkButton.innerText = 'P'
+            unmarkButton.addEventListener('click', (e) => {
+                roll = roll.map(s => s.roll === rollNo[0] ? { ...s, status: 'Present' } : s)
+                entry.classList.remove('absent')
+                numberAbs--
+                numberPres++
+                numPresDiv.innerText = numberPres;
+                numAbsDiv.innerText = numberAbs
+            })
+            entry.appendChild(rno)
+            entry.appendChild(nameSpan)
+            entry.appendChild(absButton)
+            entry.appendChild(unmarkButton)
+
+            box.appendChild(entry)
+        }
+
+        function absAsText() {
+            let abs = roll.filter(s => s.status === 'Absent')
+            abs.sort((a, b) => a[0] - b[0])
+            return abs.reduce((l, r) => `${l}\n${str(r)}`, `Number of present: ${numberPres}\nNumber of Absent: ${numberAbs}\n\n\nAbsentees:\n`)
+        }
+
+        function show() {
+            output.innerText = absAsText()
+            container.classList.add("blur")
+            absDiv.classList.remove("hide")
+            absDiv.classList.add("show")
+        }
+
+        function unshow() {
+            container.classList.remove("blur")
+            absDiv.classList.add("hide")
+            absDiv.classList.remove("show")
+        }
+
+        function copy() {
+            navigator.clipboard.writeText(absAsText())
+        }
+
+        function str(s) {
+            return s[0] + ' ' + s[1]
+        }
+
+        function createRoll(e) {
+            const f = file.files[0]
+            const reader = new FileReader();
+            reader.onload = () => {
+                res = reader.result
+                console.log(res.toString())
+                roll = res.split(/[\r\n]+/).map(e => e.split(/, ?/))
+                localStorage.setItem('roll', JSON.stringify(roll))
+                numberAbs = 0;
+                numberPres = roll.length;
+                numPresDiv.innerText = numberPres;
+                numAbsDiv.innerText = numberAbs
+                box.innerHTML = ''
+                roll.forEach((rno, sno) => createEntry(rno, sno))
+            }
+            reader.readAsText(f)
+        }
+
+        const box = document.getElementById("roll")
+        const absDiv = document.getElementById("abs")
+        const output = document.getElementById("op")
+        const numPresDiv = document.getElementById("numberPresent")
+        const numAbsDiv = document.getElementById("numberAbsent")
+        const container = document.getElementById("container")
+        let res
+        let roll = []
+        let numberAbs = 0;
+        let numberPres = 0;
+
+    </script>
+</body>
+
+</html>
