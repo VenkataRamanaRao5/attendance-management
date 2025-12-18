@@ -16,17 +16,17 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY
 // --- API ROUTES ---
 
 app.get('/', (req, res) => res.send('Hello World!'));
-app.get('/api', (req, res) => res.send('Hello World!'));
+app.get('/test', (req, res) => res.send('Hello World!'));
 
 // 1. Get all classes
-app.get('/api/classes', async (req, res) => {
+app.get('/classes', async (req, res) => {
     const { data, error } = await supabase.from('class_rosters').select('class_name');
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
 });
 
 // 2. Create a new class roster
-app.post('/api/classes', async (req, res) => {
+app.post('/classes', async (req, res) => {
     const { className, students } = req.body;
     const { error } = await supabase.from('class_rosters').insert({ class_name: className, students });
     if (error) return res.status(500).json({ error: error.message });
@@ -34,7 +34,7 @@ app.post('/api/classes', async (req, res) => {
 });
 
 // 3. Get roster for a specific class
-app.get('/api/roster/:className', async (req, res) => {
+app.get('/roster/:className', async (req, res) => {
     const { data, error } = await supabase
         .from('class_rosters')
         .select('students')
@@ -46,7 +46,7 @@ app.get('/api/roster/:className', async (req, res) => {
 });
 
 // 4. Save Attendance
-app.post('/api/attendance', async (req, res) => {
+app.post('/attendance', async (req, res) => {
     const { className, date, hour, attendanceData } = req.body;
     const { error } = await supabase.from('attendance_records').upsert({
         class_name: className,
@@ -60,7 +60,7 @@ app.post('/api/attendance', async (req, res) => {
 });
 
 // 5. Load Attendance
-app.get('/api/attendance', async (req, res) => {
+app.get('/attendance', async (req, res) => {
     const { className, date, hour } = req.query;
     const { data, error } = await supabase
         .from('attendance_records')

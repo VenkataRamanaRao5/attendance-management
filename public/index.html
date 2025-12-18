@@ -244,7 +244,7 @@
     </div>
     <script>
 
-        const baseUrl = "http://127.0.0.1:3000"
+        const baseUrl = "https://attendance-management-eta.vercel.app/";
 
         window.onload = async () => {
             document.getElementById('attendanceDate').valueAsDate = new Date();
@@ -257,7 +257,7 @@
         }
 
         async function fetchClasses() {
-            const res = await fetch(baseUrl + '/api/classes');
+            const res = await fetch(baseUrl + '/classes');
             const data = await res.json();
             
             const select = document.getElementById('classSelector');
@@ -290,7 +290,7 @@
                 });
 
                 // POST to our server
-                const res = await fetch(baseUrl + '/api/classes', {
+                const res = await fetch(baseUrl + '/classes', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ className, students: studentList })
@@ -311,7 +311,7 @@
             const className = document.getElementById('classSelector').value;
             if (!className) return;
 
-            const res = await fetch(`${baseUrl}/api/roster/${className}`);
+            const res = await fetch(`${baseUrl}/roster/${className}`);
             const data = await res.json();
             
             if (data && data.students) {
@@ -333,7 +333,7 @@
             const attendanceMap = {};
             roll.forEach(s => attendanceMap[s.roll] = s.status);
 
-            const res = await fetch(baseUrl + '/api/attendance', {
+            const res = await fetch(baseUrl + '/attendance', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ className, date, hour, attendanceData: attendanceMap })
@@ -353,7 +353,7 @@
 
             // Then fetch the status overlay
             const params = new URLSearchParams({ className, date, hour });
-            const res = await fetch(`${baseUrl}/api/attendance?${params}`);
+            const res = await fetch(`${baseUrl}/attendance?${params}`);
             const data = await res.json();
 
             if (data && data.attendance_data) {
