@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Login - Attendance App</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: #f0f2f5;
+            margin: 0;
+        }
+
+        .card {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 300px;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .btn-login {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-register {
+            background: #cbd5e1;
+            color: #333;
+            margin-top: 10px;
+        }
+
+        .error {
+            color: red;
+            font-size: 0.9em;
+            text-align: center;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <h2 style="text-align:center;">Welcome</h2>
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+
+        <button onclick="handleAuth('https\:\/\/attendance-management-eta.vercel.app\/\/login')" class="btn-login">Login</button>
+        <button onclick="handleAuth('https\:\/\/attendance-management-eta.vercel.app\/\/register')" class="btn-register">Register</button>
+
+        <div id="errorMsg" class="error"></div>
+    </div>
+
+    <script>
+        // 1. Redirect if already logged in
+        if (localStorage.getItem('token')) {
+            window.location.href = '/index.html';
+        }
+
+        async function handleAuth(endpoint) {
+            const u = document.getElementById('username').value;
+            const p = document.getElementById('password').value;
+            const errorDiv = document.getElementById('errorMsg');
+
+            if (!u || !p) return showMsg("Please enter username and password");
+
+            try {
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: u, password: p })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    if (endpoint.includes('register')) {
+                        showMsg("Registered! Please login.", "green");
+                    } else {
+                        // Login Success: Save Token & Redirect
+                        localStorage.setItem('token', data.token);
+                        localStorage.setItem('user', data.username);
+                        window.location.href = '/index.html';
+                    }
+                } else {
+                    showMsg(data.error || "Authentication failed");
+                }
+            } catch (e) {
+                showMsg("Server error. Is Node running?");
+            }
+        }
+
+        function showMsg(text, color = 'red') {
+            const el = document.getElementById('errorMsg');
+            el.innerText = text;
+            el.style.color = color;
+            el.style.display = 'block';
+        }
+    </script>
+</body>
+
+</html>

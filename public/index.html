@@ -56,7 +56,6 @@
         .entry {
             padding: 5px;
             display: grid;
-            width: 95%;
             grid-template-columns: 0.2fr 0.8fr 0.1fr 0.1fr;
             border-bottom: 1px solid #333;
             /* Dark border for separation */
@@ -244,12 +243,52 @@
     </div>
     <script>
 
-        const baseUrl = "https://attendance-management-eta.vercel.app/";
+        const baseUrl = "https://attendance-management-eta.vercel.app/"
+        const box = document.getElementById("roll")
+        const absDiv = document.getElementById("abs")
+        const output = document.getElementById("op")
+        const numPresDiv = document.getElementById("numberPresent")
+        const numAbsDiv = document.getElementById("numberAbsent")
+        const container = document.getElementById("container")
+        let res
+        let roll = []
+        let numberAbs = 0;
+        let numberPres = 0;
 
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/login.html'; // Redirect to login if no token
+        }
+
+        // --- 3. INIT ---
         window.onload = async () => {
+            const user = localStorage.getItem('user');
+            if(user) document.title = `Attendance - ${user}`; // Optional: Show user in title
             document.getElementById('attendanceDate').valueAsDate = new Date();
             await fetchClasses();
         };
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = '/index.html';
+        }
+
+        // --- SECURE FETCH HELPER ---
+        // This attaches the token to every request automatically
+        async function authFetch(url, options = {}) {
+            options.headers = { 
+                ...options.headers, 
+                'Authorization': `Bearer ${token}` 
+            };
+            
+            const res = await fetch(url, options);
+            
+            // If token is invalid/expired (401), force logout
+            if (res.status === 401 || res.status === 403) {
+                logout();
+            }
+            return res;
+        }
 
         function toggleManager() {
             const el = document.getElementById('classManager');
@@ -257,7 +296,7 @@
         }
 
         async function fetchClasses() {
-            const res = await fetch(baseUrl + '/classes');
+            const res = await authFetch(baseUrl + '/classes');
             const data = await res.json();
             
             const select = document.getElementById('classSelector');
@@ -290,7 +329,7 @@
                 });
 
                 // POST to our server
-                const res = await fetch(baseUrl + '/classes', {
+                const res = await authFetch(baseUrl + '/classes', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ className, students: studentList })
@@ -311,7 +350,7 @@
             const className = document.getElementById('classSelector').value;
             if (!className) return;
 
-            const res = await fetch(`${baseUrl}/roster/${className}`);
+            const res = await authFetch(`${baseUrl}/roster/${className}`);
             const data = await res.json();
             
             if (data && data.students) {
@@ -333,7 +372,7 @@
             const attendanceMap = {};
             roll.forEach(s => attendanceMap[s.roll] = s.status);
 
-            const res = await fetch(baseUrl + '/attendance', {
+            const res = await authFetch(baseUrl + '/attendance', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ className, date, hour, attendanceData: attendanceMap })
@@ -351,9 +390,9 @@
             // First reload the clean roster to get names
             await loadClassRoster();
 
-            // Then fetch the status overlay
+            // Then authFetch the status overlay
             const params = new URLSearchParams({ className, date, hour });
-            const res = await fetch(`${baseUrl}/attendance?${params}`);
+            const res = await authFetch(`${baseUrl}/attendance?${params}`);
             const data = await res.json();
 
             if (data && data.attendance_data) {
@@ -449,6 +488,10 @@
             return s[0] + ' ' + s[1]
         }
 
+        function mark(){
+            
+        }
+
         function createRoll(e) {
             const f = file.files[0]
             const reader = new FileReader();
@@ -466,17 +509,6 @@
             }
             reader.readAsText(f)
         }
-
-        const box = document.getElementById("roll")
-        const absDiv = document.getElementById("abs")
-        const output = document.getElementById("op")
-        const numPresDiv = document.getElementById("numberPresent")
-        const numAbsDiv = document.getElementById("numberAbsent")
-        const container = document.getElementById("container")
-        let res
-        let roll = []
-        let numberAbs = 0;
-        let numberPres = 0;
 
     </script>
 </body>
