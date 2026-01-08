@@ -58,9 +58,8 @@ export default function DashboardPage() {
     }
 
     const hourList = attendanceHour
-      .split(/[,-]/)
+      .split(/,\s*/)
       .map(e => e.trim())
-      .filter(Boolean)
 
     const attendanceMap = {}
     roll.forEach(s => (attendanceMap[s.roll] = s.status))
@@ -73,7 +72,7 @@ export default function DashboardPage() {
         body: JSON.stringify({
           className: selectedClass,
           date: attendanceDate,
-          hourList,
+          hour: hourList,
           attendanceData: attendanceMap
         })
       })
@@ -216,7 +215,7 @@ export default function DashboardPage() {
 
         {/* Roll List */}
         {roll.length > 0 && (
-          <div id="roll" className="mt-6 bg-dark-200 border border-gray-700 rounded-lg p-2 h-96 overflow-y-auto">
+          <div id="roll" className="mt-6 bg-dark-200 border border-gray-700 rounded-lg p-2 h-[80vh] overflow-y-auto">
             <RollList
               roll={roll}
               onMarkAbsent={markAbsent}

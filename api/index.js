@@ -138,5 +138,104 @@ app.get('/attendance', authenticateToken, async (req, res) => {
     res.json(data || null);
 });
 
+// --- REPORT ROUTE ---
+// Queries: single class, single roll no, range of dates
+// Returns: list of dates with present/absent status, total hours, present/absent hours
+app.get('/report', authenticateToken, async (req, res) => {
+    const { className, rollNo, startDate, endDate } = req.query;
+
+    if (!className || !rollNo || !startDate || !endDate) {
+        return res.status(400).json({ error: "Missing required fields: className, rollNo, startDate, endDate" });
+    }
+
+    try {
+        // Fetch all attendance records for this class in the date range
+        const { data: records, error } = await supabase
+            .from('attendance_records')
+            .select('date, hour, attendance_data')
+            .eq('class_name', className)
+            .gte('date', startDate)
+            .lte('date', endDate)
+            .order('date', { ascending: true });
+
+        if (error) return res.status(500).json({ error: error.message });
+
+        // Process records to extract student's attendance
+        const attendanceByDate = {};
+        let totalHours = 0;
+        let presentHours = 0;
+        let absentHours = 0;
+
+        records.forEach(record => {
+            const { date, hour, attendance_data } = record;
+            
+            // hour is an array or comma-separated string, count the hours
+            let hourCount = 1;
+            if (Array.isArray(hour)) {
+                hourCount = hour.length;
+            } else if (typeof hour === 'string') {
+                hourCount = hour.split(',').length;
+            }
+
+            const studentStatus = attendance_data?.[rollNo];
+
+            if (studentStatus) {
+                totalHours += hourCount;
+                
+                if (!attendanceByDate[date]) {
+                    attendanceByDate[date] = [];
+                }
+
+                // Add hour entries for this date
+                if (Array.isArray(hour)) {
+                    hour.forEach(h => {
+                        attendanceByDate[date].push({
+                            hour: h,
+                            status: studentStatus
+                        });
+                        if (studentStatus === 'Present') presentHours++;
+                        else if (studentStatus === 'Absent') absentHours++;
+                    });
+                } else if (typeof hour === 'string') {
+                    hour.split(',').forEach(h => {
+                        attendanceByDate[date].push({
+                            hour: h.trim(),
+                            status: studentStatus
+                        });
+                        if (studentStatus === 'Present') presentHours++;
+                        else if (studentStatus === 'Absent') absentHours++;
+                    });
+                } else {
+                    attendanceByDate[date].push({
+                        hour: hour,
+                        status: studentStatus
+                    });
+                    if (studentStatus === 'Present') presentHours++;
+                    else if (studentStatus === 'Absent') absentHours++;
+                }
+            }
+        });
+
+        // Format response: calendar view with summary
+        const details = Object.entries(attendanceByDate).map(([date, entries]) => ({
+            date,
+            entries // Array of { hour, status }
+        }));
+
+        res.json({
+            summary: {
+                totalHours,
+                presentHours,
+                absentHours,
+                percentage: totalHours > 0 ? ((presentHours / totalHours) * 100).toFixed(1) : 0
+            },
+            details // Array of { date, entries }
+        });
+    } catch (err) {
+        console.error('Report error:', err);
+        res.status(500).json({ error: 'Failed to generate report' });
+    }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
