@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { getApiUrl } from '../config'
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
@@ -17,7 +18,8 @@ export default function LoginPage() {
     setError('')
 
     try {
-      const res = await fetch(endpoint, {
+      const fullUrl = getApiUrl(endpoint)
+      const res = await fetch(fullUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })

@@ -3,10 +3,11 @@ const express = require('express');
 const { createClient } = require('@supabase/supabase-js');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const cors = require('cors');
 
 const app = express();
+app.use(cors())
 app.use(express.json());
-app.use(express.static('public'));
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 const JWT_SECRET = process.env.JWT_SECRET
@@ -25,6 +26,10 @@ function authenticateToken(req, res, next) {
         next();
     });
 }
+
+app.get('/', async (req, res) => {
+    res.send("Hello");
+})
 
 // --- AUTH ROUTES ---
 
@@ -140,7 +145,7 @@ app.get('/attendance', authenticateToken, async (req, res) => {
 
 // --- REPORT ROUTE ---
 // Queries: single class, single roll no, range of dates
-// Returns: list of dates with present/absent status, total hours, present/absent hours
+// Returns: list of dates with present/absent status (daily, not hourly)
 app.get('/report', authenticateToken, async (req, res) => {
     const { className, rollNo, startDate, endDate } = req.query;
 
@@ -216,10 +221,10 @@ app.get('/report', authenticateToken, async (req, res) => {
             }
         });
 
-        // Format response: calendar view with summary
-        const details = Object.entries(attendanceByDate).map(([date, entries]) => ({
+        // Format response: calendar view with daily status (not hourly)
+        const details = Object.entries(attendanceByDate).map(([date, status]) => ({
             date,
-            entries // Array of { hour, status }
+            status // Either 'Present' or 'Absent' for the entire day
         }));
 
         res.json({
@@ -229,7 +234,7 @@ app.get('/report', authenticateToken, async (req, res) => {
                 absentHours,
                 percentage: totalHours > 0 ? ((presentHours / totalHours) * 100).toFixed(1) : 0
             },
-            details // Array of { date, entries }
+            details // Array of { date, status }
         });
     } catch (err) {
         console.error('Report error:', err);
@@ -238,4 +243,4 @@ app.get('/report', authenticateToken, async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

@@ -118,14 +118,7 @@ export default function DashboardPage() {
 
   const absAsText = () => {
     const absentees = roll.filter(s => s.status === 'Absent')
-    const text = [
-      `Number of present: ${numberPresent}`,
-      `Number of absent: ${numberAbsent}`,
-      '',
-      'Absentees:',
-      ...absentees.map(a => `${a.roll} ${a.name}`)
-    ]
-    return text.join('\n')
+    return absentees.map(a => `${a.roll} ${a.name}`).join('\n')
   }
 
   const copyAbsentees = () => {
@@ -215,7 +208,7 @@ export default function DashboardPage() {
 
         {/* Roll List */}
         {roll.length > 0 && (
-          <div id="roll" className="mt-6 bg-dark-200 border border-gray-700 rounded-lg p-2 h-[80vh] overflow-y-auto">
+          <div id="roll" className="mt-6 bg-dark-200 border border-gray-700 rounded-lg p-2 h-[100vh] overflow-y-auto">
             <RollList
               roll={roll}
               onMarkAbsent={markAbsent}

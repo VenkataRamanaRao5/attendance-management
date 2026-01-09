@@ -1,3 +1,5 @@
+import { getApiUrl } from '../config'
+
 export const authFetch = async (url, options = {}) => {
   const token = localStorage.getItem('token')
   options.headers = {
@@ -5,7 +7,8 @@ export const authFetch = async (url, options = {}) => {
     'Authorization': `Bearer ${token}`
   }
 
-  const res = await fetch(url, options)
+  const fullUrl = getApiUrl(url)
+  const res = await fetch(fullUrl, options)
 
   // If unauthorized or forbidden, clear storage and redirect
   if (res.status === 401 || res.status === 403) {

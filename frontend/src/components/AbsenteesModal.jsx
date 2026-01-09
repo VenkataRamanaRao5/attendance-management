@@ -10,60 +10,30 @@ export default function AbsenteesModal({
   onSave,
   isLoading
 }) {
-  const [pasteText, setPasteText] = useState('')
+  const [editText, setEditText] = useState('')
   const [parseError, setParseError] = useState('')
 
+  // Encoding: converts roll state to text format
   const absAsText = () => {
     const absentees = roll.filter(s => s.status === 'Absent')
-    const text = [
-      `Number of present: ${numberPresent}`,
-      `Number of absent: ${numberAbsent}`,
-      '',
-      'Absentees:',
-      ...absentees.map(a => `${a.roll} ${a.name}`)
-    ]
-    return text.join('\n')
+    return absentees.map(a => `${a.roll} ${a.name}`).join('\n')
   }
 
-  const copyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(absAsText())
-      alert('✓ Copied to clipboard')
-    } catch (err) {
-      alert('Failed to copy')
-    }
-  }
-
+  // Decoding: reverse of absAsText - parse text back to roll state
   const parseAndLoadAbsentees = () => {
     setParseError('')
-    if (!pasteText.trim()) {
-      setParseError('Please paste absentee data')
-      return
-    }
-
+    
     try {
-      const lines = pasteText.trim().split('\n')
-      const absenteeLines = []
-      let inAbsenteeSection = false
-
-      for (const line of lines) {
-        if (line.includes('Absentees:')) {
-          inAbsenteeSection = true
-          continue
-        }
-        if (inAbsenteeSection && line.trim()) {
-          absenteeLines.push(line.trim())
-        }
-      }
-
-      if (absenteeLines.length === 0) {
-        setParseError('No absentees found in pasted data')
+      const lines = editText.trim().split('\n').filter(line => line.trim())
+      
+      if (lines.length === 0) {
+        setParseError('Please enter absentee data')
         return
       }
 
       // Parse each line as "rollno name"
-      const absentRolls = absenteeLines
-        .map(line => line.split(/\s+/)[0])
+      const absentRolls = lines
+        .map(line => line.trim().split(/\s+/)[0])
         .filter(Boolean)
 
       if (absentRolls.length === 0) {
@@ -78,13 +48,29 @@ export default function AbsenteesModal({
       }))
 
       const newAbsent = absentRolls.length
-      const newPresent = roll.length - newAbsent
+      const newPresent = updatedRoll.length - newAbsent
 
       onRollUpdate(updatedRoll, newPresent, newAbsent)
-      setPasteText('')
-      alert(`✓ Loaded ${newAbsent} absentees and ${newPresent} present`)
+      alert(`✓ Loaded ${newAbsent} absentees`)
     } catch (err) {
-      setParseError('Error parsing data: ' + err.message)
+      setParseError('Error parsing: ' + err.message)
+    }
+  }
+
+  // Load initial text when modal opens
+  React.useEffect(() => {
+    if (show) {
+      setEditText(absAsText())
+      setParseError('')
+    }
+  }, [show, roll])
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(absAsText())
+      alert('✓ Copied to clipboard')
+    } catch (err) {
+      alert('Failed to copy')
     }
   }
 
@@ -118,32 +104,23 @@ export default function AbsenteesModal({
 
           {/* Current Absentees Display */}
           <div>
-            <label className="block text-sm font-medium mb-2">Current Absentees Report</label>
-            <pre className="bg-dark-100 p-4 rounded border border-gray-700 text-xs overflow-x-auto whitespace-pre-wrap max-h-48">
-              {absAsText()}
-            </pre>
-          </div>
-
-          {/* Load Absentees Section */}
-          <div className="border-t border-gray-700 pt-4">
-            <h3 className="font-bold mb-2">Load from Pasted Data</h3>
-            <div>
-              <label className="block text-sm font-medium mb-2">Paste absentee list:</label>
-              <textarea
-                value={pasteText}
-                onChange={(e) => {
-                  setPasteText(e.target.value)
-                  setParseError('')
-                }}
-                placeholder="Paste absentee report here..."
-                className="w-full h-24 bg-dark-100 text-dark-50 border border-gray-700 rounded px-3 py-2 font-mono text-xs"
-              />
-              {parseError && (
-                <div className="mt-2 p-2 bg-red-900 border border-red-700 rounded text-red-100 text-sm">
-                  {parseError}
-                </div>
-              )}
-            </div>
+            <label className="block text-sm font-medium mb-2">Absentees (Roll No Name, one per line)</label>
+            <textarea
+              value={editText}
+              onChange={(e) => {
+                setEditText(e.target.value)
+                setParseError('')
+              }}
+              placeholder="01 John Smith
+02 Jane Doe
+04 Bob Johnson"
+              className="w-full h-48 bg-dark-100 text-dark-50 border border-gray-700 rounded px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {parseError && (
+              <div className="mt-2 p-2 bg-red-900 border border-red-700 rounded text-red-100 text-sm">
+                {parseError}
+              </div>
+            )}
           </div>
         </div>
 
@@ -154,13 +131,13 @@ export default function AbsenteesModal({
               onClick={parseAndLoadAbsentees}
               className="btn-primary flex-1"
             >
-              Load from Paste
+              Load from Text
             </button>
             <button
               onClick={copyToClipboard}
               className="btn-secondary flex-1"
             >
-              Copy Report
+              Copy to Clipboard
             </button>
           </div>
           <div className="flex gap-2">

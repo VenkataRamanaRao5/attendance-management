@@ -171,20 +171,15 @@ export default function ReportPage() {
                             })}
                           </td>
                           <td className="px-4 py-3">
-                            <div className="flex flex-wrap gap-2">
-                              {dayRecord.entries.map((entry, entryIdx) => (
-                                <span
-                                  key={entryIdx}
-                                  className={`px-3 py-1 rounded text-sm font-medium ${
-                                    entry.status === 'Present'
-                                      ? 'bg-green-900 text-green-100'
-                                      : 'bg-red-900 text-red-100'
-                                  }`}
-                                >
-                                  Hr {entry.hour}: {entry.status === 'Present' ? '✓' : '✗'}
-                                </span>
-                              ))}
-                            </div>
+                            <span
+                              className={`px-4 py-2 rounded font-medium inline-block ${
+                                dayRecord.status.find(e => e.status === 'Present') != -1
+                                  ? 'bg-green-900 text-green-100'
+                                  : 'bg-red-900 text-red-100'
+                              }`}
+                            >
+                              {dayRecord.status.find(e => e.status === 'Present') != -1 ? '✓ Present' : '✗ Absent'}
+                            </span>
                           </td>
                         </tr>
                       ))
