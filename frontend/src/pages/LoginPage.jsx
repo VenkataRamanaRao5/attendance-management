@@ -38,7 +38,7 @@ export default function LoginPage() {
           // Login successful
           localStorage.setItem('token', data.token)
           localStorage.setItem('user', data.username)
-          window.location.href = '/#/dashboard'
+          window.location.href += '/#/dashboard'
         }
       } else {
         setError(data.error || 'Authentication failed')

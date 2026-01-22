@@ -36,6 +36,7 @@ export default function ReportPage() {
         endDate
       })
       const res = await authFetch(`/report?${params}`)
+      console.log(res)
       if (!res.ok) throw new Error('Failed to generate report')
       const data = await res.json()
       setReport(data)
@@ -44,6 +45,85 @@ export default function ReportPage() {
       alert('Error generating report')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const downloadReportAsCSV = async () => {
+    if (!selectedClass || !startDate || !endDate) {
+      alert('Please select class and date range')
+      return
+    }
+
+    try {
+      const params = new URLSearchParams({
+        className: selectedClass,
+        startDate,
+        endDate
+      })
+      const res = await authFetch(`/class-report?${params}`)
+      if (!res.ok) throw new Error('Failed to fetch report data')
+      const data = await res.json()
+      console.log(data)
+
+      // Build CSV content
+      const lines = []
+      
+      // Header information (above the main table)
+      lines.push(`Class Name,${data.className}`)
+      lines.push(`Start Date,${data.startDate}`)
+      lines.push(`End Date,${data.endDate}`)
+      lines.push(`Total Hours,${data.totalHours}`)
+      lines.push('') // Empty line
+
+      // Build column headers row 1 (with dates and summary columns)
+      const headerRow1 = ['Roll No.', 'Name', 'Hours Present', 'Hours Absent', 'Attendance %']
+      data.attendanceColumns.forEach(col => {
+        headerRow1.push(col.date)
+      })
+      lines.push(headerRow1.join(','))
+
+      // Build column headers row 2 (with hours)
+      const headerRow2 = ['', '', '', '', ''] // Empty cells for summary columns
+      data.attendanceColumns.forEach(col => {
+        headerRow2.push(col.hours)
+      })
+      lines.push(headerRow2.join(','))
+
+      // Data rows
+      data.students.forEach(student => {
+        const row = [
+          student.roll,
+          student.name,
+          student.presentHours,
+          student.absentHours,
+          `${student.percentage}%`
+        ]
+        
+        // Add individual attendance records (one column per record)
+        data.attendanceColumns.forEach((col, index) => {
+          const status = data.studentAttendance[student.roll][index] || ''
+          row.push(status === 'Present' ? 'P' : (status === 'Absent' ? 'A' : ''))
+        })
+        
+        lines.push(row.join(','))
+      })
+
+      console.log(lines)
+
+      // Create and download file
+      const csvContent = lines.join('\n')
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const link = document.createElement('a')
+      const url = URL.createObjectURL(blob)
+      link.setAttribute('href', url)
+      link.setAttribute('download', `${data.className}_attendance_${data.startDate}_to_${data.endDate}.csv`)
+      link.style.visibility = 'hidden'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } catch (err) {
+      console.error('Error downloading report:', err)
+      alert('Error downloading report')
     }
   }
 
@@ -110,6 +190,14 @@ export default function ReportPage() {
           >
             {isLoading ? 'Generating...' : 'Generate Report'}
           </button>
+
+          <button
+            onClick={downloadReportAsCSV}
+            disabled={!selectedClass || !startDate || !endDate}
+            className="btn-secondary w-full mt-2 disabled:opacity-50"
+          >
+            Download as CSV
+          </button>
         </div>
 
         {/* Report Results */}
@@ -173,12 +261,15 @@ export default function ReportPage() {
                           <td className="px-4 py-3">
                             <span
                               className={`px-4 py-2 rounded font-medium inline-block ${
-                                dayRecord.status.find(e => e.status === 'Present') != -1
+                                dayRecord.status.find(e => e.status === 'Present')
                                   ? 'bg-green-900 text-green-100'
                                   : 'bg-red-900 text-red-100'
                               }`}
                             >
-                              {dayRecord.status.find(e => e.status === 'Present') != -1 ? '✓ Present' : '✗ Absent'}
+                              {dayRecord.status.find(e => e.status === 'Present') ? '✓ Present' : '✗ Absent'}
+                            </span>
+                            <span className="ml-3 text-gray-400 text-sm">
+                              {dayRecord.status.length} {dayRecord.status.length === 1 ? 'hour' : 'hours'}
                             </span>
                           </td>
                         </tr>

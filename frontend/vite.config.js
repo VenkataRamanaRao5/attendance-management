@@ -13,7 +13,8 @@ export default defineConfig({
       '/attendance': 'http://localhost:3000',
       '/login': 'http://localhost:3000',
       '/register': 'http://localhost:3000',
-      '/report': 'http://localhost:3000'
+      '/report': 'http://localhost:3000',
+      '/class-report': 'http://localhost:3000'
     }
   },
   build: {

@@ -242,5 +242,126 @@ app.get('/report', authenticateToken, async (req, res) => {
     }
 });
 
+// --- CLASS REPORT ROUTE ---
+// Queries: class name, start date, end date
+// Returns: attendance summary for all students in class (for CSV export)
+app.get('/class-report', authenticateToken, async (req, res) => {
+    const { className, startDate, endDate } = req.query;
+
+    if (!className || !startDate || !endDate) {
+        return res.status(400).json({ error: "Missing required fields: className, startDate, endDate" });
+    }
+
+    try {
+        // Fetch roster
+        const { data: rosterData, error: rosterError } = await supabase
+            .from('class_rosters')
+            .select('students')
+            .eq('class_name', className)
+            .eq('owner_id', req.user.id)
+            .single();
+
+        if (rosterError) return res.status(400).json({ error: "Class not found" });
+
+        const students = rosterData.students || [];
+
+        // Fetch all attendance records for this class in the date range
+        const { data: records, error: recordsError } = await supabase
+            .from('attendance_records')
+            .select('date, hour, attendance_data')
+            .eq('class_name', className)
+            .gte('date', startDate)
+            .lte('date', endDate)
+            .order('date', { ascending: true });
+
+        if (recordsError) return res.status(500).json({ error: recordsError.message });
+
+        // Build attendance columns (one per record, containing date and hour range)
+        const attendanceColumns = records.map(record => {
+            const { date, hour } = record;
+            
+            // Parse hours
+            const hours = Array.isArray(hour) ? hour : (typeof hour === 'string' ? hour.split(',').map(h => h.trim()) : [hour.toString()]);
+            
+            return {
+                date,
+                hours: `"${hours.join(',')}"`, // Store hours as comma-separated string
+                hourCount: hours.length
+            };
+        });
+
+        // Calculate attendance for each student
+        const studentStats = {};
+        const studentAttendance = {};
+
+        students.forEach(student => {
+            studentStats[student.roll] = {
+                roll: student.roll,
+                name: student.name,
+                presentHours: 0,
+                absentHours: 0,
+                totalHours: 0
+            };
+            studentAttendance[student.roll] = {};
+        });
+
+        // For each record, store attendance for each student
+        records.forEach((record, recordIndex) => {
+            const { attendance_data, hour } = record;
+            
+            // Count hours for this record
+            let hourCount = 1;
+            if (Array.isArray(hour)) {
+                hourCount = hour.length;
+            } else if (typeof hour === 'string') {
+                hourCount = hour.split(',').length;
+            }
+
+            // Update stats for each student
+            Object.keys(attendance_data || {}).forEach(rollNo => {
+                if (studentStats[rollNo]) {
+                    const status = attendance_data[rollNo];
+                    studentStats[rollNo].totalHours += hourCount;
+                    if (status === 'Present') {
+                        studentStats[rollNo].presentHours += hourCount;
+                    } else if (status === 'Absent') {
+                        studentStats[rollNo].absentHours += hourCount;
+                    }
+                    
+                    // Store attendance by record index
+                    studentAttendance[rollNo][recordIndex] = status;
+                }
+            });
+        });
+
+        // Calculate percentages and format response
+        const classReport = Object.values(studentStats).map(stat => ({
+            ...stat,
+            percentage: stat.totalHours > 0 ? ((stat.presentHours / stat.totalHours) * 100).toFixed(1) : 0
+        }));
+
+        res.json({
+            className,
+            startDate,
+            endDate,
+            totalHours: records.reduce((sum, r) => {
+                let hourCount = 1;
+                if (Array.isArray(r.hour)) {
+                    hourCount = r.hour.length;
+                } else if (typeof r.hour === 'string') {
+                    hourCount = r.hour.split(',').length;
+                }
+                return sum + hourCount;
+            }, 0),
+            students: classReport,
+            attendanceColumns, // Array of { date, hours, hourCount } for each record
+            studentAttendance // Map of rollNo -> { recordIndex -> "Present"/"Absent" }
+        });
+    } catch (err) {
+        console.error('Class report error:', err);
+        res.status(500).json({ error: 'Failed to generate class report' });
+    }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

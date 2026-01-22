@@ -128,7 +128,7 @@ export default function DashboardPage() {
 
   const logout = () => {
     localStorage.clear()
-    window.location.href = '/#/login'
+    window.location.href += '/#/login'
   }
 
   if (mode === 'report') {
